@@ -1,7 +1,9 @@
+require('dotenv').config();
 const db = require('../db'); // Conexão DB do PriceScout
 const config = require('./config');
 const scrapers = require('./scrapers');
 const logger = require('./logger');
+// require('dotenv').config({ path: 'C:\\Users\\anime\\Documents\\PriceScout\\backend\\.env' }); // Carrega variáveis de ambiente (teste local)
 
 // Regex para extrair specs do TÍTULO DA OFERTA
 const REGEX = {
@@ -104,7 +106,20 @@ async function executarScraper() {
 
     logger.info(`>>> ${produtos.length} produtos para monitorar.`);
     let totalAtualizados = 0;
-    const todasAsFuncoes = [scrapers.buscaAmazon, scrapers.buscaMercadoLivre];
+    const resumo = {
+        amazon: { encontrados: 0, salvos: 0 },
+        mercadolivre: { encontrados: 0, salvos: 0 },
+        magalu: { encontrados: 0, salvos: 0 },
+        kabum: { encontrados: 0, salvos: 0 }
+    };
+
+
+    const todasAsFuncoes = [
+        scrapers.buscaAmazon,
+        scrapers.buscaMercadoLivre,
+        scrapers.buscaMagalu,
+        scrapers.buscaKabum
+    ];
 
     // 2. Itera sobre cada produto
     for (const produto of produtos) {
@@ -114,8 +129,26 @@ async function executarScraper() {
         for (const funcaoScraper of todasAsFuncoes) {
             try {
                 const ofertas = await funcaoScraper(termo, getUserAgent());
+                // Contabiliza encontrados por loja
+                for (const oferta of ofertas) {
+                    const lojaKey = (oferta.loja || '').toLowerCase();
+                    if (lojaKey.includes('amazon')) resumo.amazon.encontrados++;
+                    else if (lojaKey.includes('mercado')) resumo.mercadolivre.encontrados++;
+                    else if (lojaKey.includes('magalu') || lojaKey.includes('magazine')) resumo.magalu.encontrados++;
+                    else if (lojaKey.includes('kabum')) resumo.kabum.encontrados++;
+                }
+
                 const salvas = await salvarOfertas(produto.id, ofertas);
                 totalAtualizados += salvas;
+                // Contabiliza salvos por loja (aproximação: distribui proporcionalmente)
+                // Aqui, como salvamos em lote por produto, somamos 1 por oferta salva, olhando a loja
+                for (const oferta of ofertas) {
+                    const lojaKey = (oferta.loja || '').toLowerCase();
+                    if (lojaKey.includes('amazon')) resumo.amazon.salvos++;
+                    else if (lojaKey.includes('mercado')) resumo.mercadolivre.salvos++;
+                    else if (lojaKey.includes('magalu') || lojaKey.includes('magazine')) resumo.magalu.salvos++;
+                    else if (lojaKey.includes('kabum')) resumo.kabum.salvos++;
+                }
             } catch (e) { 
                 logger.error(`Erro ao rodar scraper para ${termo}:`, e.message); 
             }
@@ -124,7 +157,25 @@ async function executarScraper() {
     }
 
     logger.info(`>>> Varredura finalizada. ${totalAtualizados} ofertas salvas/atualizadas.`);
+    logger.info(`>>> Resumo por loja:`);
+    logger.info(`    Amazon: encontrados=${resumo.amazon.encontrados}, salvos=${resumo.amazon.salvos}`);
+    logger.info(`    Mercado Livre: encontrados=${resumo.mercadolivre.encontrados}, salvos=${resumo.mercadolivre.salvos}`);
+    logger.info(`    Magalu: encontrados=${resumo.magalu.encontrados}, salvos=${resumo.magalu.salvos}`);
+    logger.info(`    KaBuM!: encontrados=${resumo.kabum.encontrados}, salvos=${resumo.kabum.salvos}`);
     return { success: true, total: totalAtualizados, error: null };
 }
 
 module.exports = { executarScraper };
+
+// Executa diretamente quando chamado via `node run.js`
+if (require.main === module) {
+    executarScraper()
+        .then((res) => {
+            logger.info(`>>> Fim da execução. Sucesso=${res.success}, total=${res.total}`);
+            process.exit(0);
+        })
+        .catch((err) => {
+            logger.error(`Falha na execução do scraper: ${err.message}`);
+            process.exit(1);
+        });
+}

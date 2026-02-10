@@ -1,4 +1,3 @@
-// backend/src/router/routes.js
 const express = require('express');
 const router = express.Router();
 const db = require('../../db');
@@ -16,10 +15,11 @@ router.post('/api/run-scraper', monitoramentoController.runScraper);
 
 // --- Rotas de Produto (para Procurar.jsx) ---
 
-// Rota GET: /products/all (Lista os 5 produtos fixos)
+// Rota GET: /products/all (Lista os produtos com IMAGEM)
 router.get('/products/all', async (req, res) => {
     try {
-        const { rows } = await db.query('SELECT * FROM Produtos');
+        // SQL atualizado para pegar a url_imagem que incluímos no banco
+        const { rows } = await db.query('SELECT id, nome_produto, url_imagem FROM Produtos ORDER BY nome_produto');
         return res.json(rows);
     } catch (error) {
         console.error("Erro ao buscar todos os produtos:", error.stack);

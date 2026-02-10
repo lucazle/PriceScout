@@ -1,3 +1,79 @@
+# Passo a Passo para rodar o Scraper com Playwright
+
+### 1. Pré-requisitos
+
+- Node.js (recomendado instalar via NVM)
+- PostgreSQL
+- npm (gerenciador de pacotes do Node.js)
+
+### 2. Clonar o repositório e instalar dependências
+
+```bash
+git clone <seu-repo>
+cd PriceScout
+```
+
+#### Backend
+
+```bash
+cd backend
+npm install
+```
+
+#### Frontend
+
+```bash
+cd ../frontend
+npm install
+```
+
+#### Scraper (Playwright)
+
+```bash
+cd ../backend/scraper
+npm install
+npx playwright install
+# (Linux/WSL) Instale dependências do navegador:
+sudo npx playwright install-deps
+```
+
+### 3. Configurar variáveis de ambiente
+
+No diretório `backend`, crie um arquivo `.env` com:
+
+```
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=radar_admin
+DB_PASSWORD=sua_senha_segura
+DB_NAME=radar_db
+JWT_SECRET=meu_jwt_secret_super_forte
+```
+
+### 4. Inicializar o banco de dados
+
+```bash
+cd backend
+node init-db.js
+```
+
+### 5. Rodar o projeto
+
+- **Backend**:  
+	```bash
+	cd backend
+	npm run dev
+	```
+- **Frontend**:  
+	```bash
+	cd frontend
+	npm run dev
+	```
+- **Scraper (Playwright)**:  
+	```bash
+	cd backend/scraper
+	node run.js
+	```
 (PriceScout)
 Um monitor de preços de notebooks que permite aos usuários seguir produtos específicos e receber alertas.
 

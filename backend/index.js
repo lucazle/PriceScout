@@ -109,7 +109,6 @@ app.post('/products/add', authenticateToken, async (req, res) => {
 
 // --- ROTA DO SCRAPER REATIVADA ---
 app.post('/api/run-scraper', authenticateToken, async (req, res) => {
-    // Verifica se o módulo foi carregado corretamente
     if (!scraper || !scraper.executarScraper) {
         console.error("ERRO: Módulo scraper não carregado ou função executarScraper não encontrada.");
         return res.status(500).json({ error: 'Serviço de scraper indisponível no servidor.' });
@@ -118,11 +117,8 @@ app.post('/api/run-scraper', authenticateToken, async (req, res) => {
     console.log(`[API] Usuário ${req.user.nome} solicitou atualização de preços.`);
     
     try {
-        // Chama a função REAL do scraper
         const resultado = await scraper.executarScraper();
-        
         console.log("Resultado do Scraper:", resultado);
-        
         res.json({ 
             message: `Varredura concluída! ${resultado.total} ofertas atualizadas.`, 
             detalhes: resultado 
@@ -133,10 +129,11 @@ app.post('/api/run-scraper', authenticateToken, async (req, res) => {
     }
 });
 
-// Rota para Listar TODOS os produtos
+// Rota para Listar TODOS os produtos (AJUSTADA PARA IMAGEM)
 app.get('/products/all', authenticateToken, async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM Produtos ORDER BY nome_produto');
+        // Mudamos SELECT * para garantir que url_imagem venha do banco
+        const result = await db.query('SELECT id, nome_produto, url_imagem FROM Produtos ORDER BY nome_produto');
         res.json(result.rows);
     } catch (err) {
         console.error("Erro ao buscar todos os produtos:", err);
@@ -161,7 +158,7 @@ app.get('/products/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// Rota do Dashboard
+// Rota do Dashboard (AJUSTADA PARA IMAGEM)
 app.get('/dashboard', authenticateToken, async (req, res) => {
     try {
         const query = `
@@ -174,6 +171,7 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
             WHERE us.usuario_id = $1
             ORDER BY p.nome_produto;
         `;
+        // p.* já traz a url_imagem se ela estiver na tabela Produtos
         const result = await db.query(query, [req.user.userId]);
         res.json(result.rows);
     } catch (err) {
@@ -225,116 +223,47 @@ app.delete('/products/:id/follow', authenticateToken, async (req, res) => {
 
 // --- ROTAS DE PERFIL ---
 
-// GET /perfil - Obter dados do usuário
 app.get('/perfil', authenticateToken, async (req, res) => {
     const usuarioId = req.user.userId;
-
     try {
         const query = 'SELECT id, nome, email FROM Usuarios WHERE id = $1';
         const { rows } = await db.query(query, [usuarioId]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ message: 'Usuário não encontrado.' });
-        }
-
+        if (rows.length === 0) return res.status(404).json({ message: 'Usuário não encontrado.' });
         return res.json(rows[0]);
     } catch (error) {
-        console.error("Erro ao buscar perfil do usuário:", error.stack);
-        return res.status(500).json({ message: "Erro interno ao buscar perfil." });
+        console.error("Erro ao buscar perfil:", error.stack);
+        return res.status(500).json({ message: "Erro interno." });
     }
 });
 
-// PUT /perfil - Atualizar informações básicas
 app.put('/perfil', authenticateToken, async (req, res) => {
     const usuarioId = req.user.userId;
     const { nome, email } = req.body;
-
-    if (!nome || !email) {
-        return res.status(400).json({ message: 'Nome e email são obrigatórios.' });
-    }
-
+    if (!nome || !email) return res.status(400).json({ message: 'Nome e email obrigatórios.' });
     try {
-        // Verifica se o email já está em uso por outro usuário
-        const emailCheck = await db.query(
-            'SELECT id FROM Usuarios WHERE email = $1 AND id != $2',
-            [email, usuarioId]
-        );
-
-        if (emailCheck.rows.length > 0) {
-            return res.status(409).json({ message: 'Este email já está em uso.' });
-        }
-
-        const query = `
-            UPDATE Usuarios 
-            SET nome = $1, email = $2 
-            WHERE id = $3 
-            RETURNING id, nome, email
-        `;
-        
+        const emailCheck = await db.query('SELECT id FROM Usuarios WHERE email = $1 AND id != $2', [email, usuarioId]);
+        if (emailCheck.rows.length > 0) return res.status(409).json({ message: 'E-mail em uso.' });
+        const query = 'UPDATE Usuarios SET nome = $1, email = $2 WHERE id = $3 RETURNING id, nome, email';
         const { rows } = await db.query(query, [nome, email, usuarioId]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ message: 'Usuário não encontrado.' });
-        }
-
-        return res.json({
-            message: 'Perfil atualizado com sucesso!',
-            user: rows[0]
-        });
+        return res.json({ message: 'Perfil atualizado!', user: rows[0] });
     } catch (error) {
-        console.error("Erro ao atualizar perfil:", error.stack);
-        return res.status(500).json({ message: "Erro interno ao atualizar perfil." });
+        return res.status(500).json({ message: "Erro ao atualizar." });
     }
 });
 
-// PUT /perfil/senha - Atualizar senha
 app.put('/perfil/senha', authenticateToken, async (req, res) => {
     const usuarioId = req.user.userId;
     const { senhaAtual, novaSenha } = req.body;
-
-    if (!senhaAtual || !novaSenha) {
-        return res.status(400).json({ message: 'Senha atual e nova senha são obrigatórias.' });
-    }
-
-    // Validação de senha forte
-    if (novaSenha.length < 8) {
-        return res.status(400).json({ message: 'A nova senha deve ter pelo menos 8 caracteres.' });
-    }
-
-    if (!/[0-9]/.test(novaSenha)) {
-        return res.status(400).json({ message: 'A nova senha deve conter pelo menos um número.' });
-    }
-
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(novaSenha)) {
-        return res.status(400).json({ message: 'A nova senha deve conter pelo menos um caractere especial.' });
-    }
-
+    if (!senhaAtual || !novaSenha) return res.status(400).json({ message: 'Preencha as senhas.' });
     try {
-        // Busca o usuário e verifica a senha atual
-        const userQuery = 'SELECT senha_hash FROM Usuarios WHERE id = $1';
-        const { rows } = await db.query(userQuery, [usuarioId]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ message: 'Usuário não encontrado.' });
-        }
-
+        const { rows } = await db.query('SELECT senha_hash FROM Usuarios WHERE id = $1', [usuarioId]);
         const senhaValida = await bcrypt.compare(senhaAtual, rows[0].senha_hash);
-
-        if (!senhaValida) {
-            return res.status(401).json({ message: 'Senha atual incorreta.' });
-        }
-
-        // Hash da nova senha
+        if (!senhaValida) return res.status(401).json({ message: 'Senha atual incorreta.' });
         const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
-
-        // Atualiza a senha
-        const updateQuery = 'UPDATE Usuarios SET senha_hash = $1 WHERE id = $2';
-        await db.query(updateQuery, [novaSenhaHash, usuarioId]);
-
-        return res.json({ message: 'Senha atualizada com sucesso!' });
+        await db.query('UPDATE Usuarios SET senha_hash = $1 WHERE id = $2', [novaSenhaHash, usuarioId]);
+        return res.json({ message: 'Senha atualizada!' });
     } catch (error) {
-        console.error("Erro ao atualizar senha:", error.stack);
-        return res.status(500).json({ message: "Erro interno ao atualizar senha." });
+        return res.status(500).json({ message: "Erro interno." });
     }
 });
 

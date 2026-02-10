@@ -1,132 +1,221 @@
+// src/components/MonitoradosGrid.jsx
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaTrash, FaPen } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
-function MonitoradosGrid({ produtos, onUnfollow, onEditPrice }) {
-    const navigate = useNavigate();
-    
-    if (!produtos || produtos.length === 0) return null;
+const placeholderImg = "https://placehold.co/300x200/png?text=Notebook";
 
-    return (
+function MonitoradosGrid({
+  produtos = [],
+  onUnfollow = () => {},
+  onEditPrice = () => {},
+}) {
+
+  if (!produtos || produtos.length === 0) {
+    return <p style={{ padding: 20 }}>Você ainda não monitora nenhum produto.</p>;
+  }
+
+  return (
+    <div style={styles.wrapper}>
+
+      <div style={styles.container}>
+
+        <h3 style={styles.title}>Notebook Monitorados</h3>
+
         <div style={styles.grid}>
-            {produtos.map(produto => (
-                <div key={produto.id} style={styles.card}>
-                    {/* Ícone de Lixeira no topo direito */}
-                    <button 
-                        onClick={() => onUnfollow(produto.id)}
-                        style={styles.trashBtn}
-                        title="Parar de monitorar"
-                    >
-                        <FaTrash size={14} />
-                    </button>
 
-                    <div style={styles.imageContainer}>
-                         <img 
-                            src="https://placehold.co/300x200/png?text=Notebook" 
-                            alt={produto.nome_produto} 
-                            style={styles.image} 
-                        />
-                    </div>
-                    <h4 style={styles.name}>{produto.nome_produto}</h4>
+          {produtos.map((produto) => (
 
-                    {/* Área de Ações (Botão Detalhes + Botão Editar) */}
-                    <div style={styles.actionsRow}>
-                        <button 
-                            onClick={() => navigate(`/produto/${produto.id}`)}
-                            style={styles.detailsBtn}
-                        >
-                            Ver Detalhes
-                        </button>
-                        
-                        <button 
-                            onClick={() => onEditPrice(produto.id)}
-                            style={styles.editBtn}
-                            title="Editar filtro"
-                        >
-                            <FaPen size={14} color="white" />
-                        </button>
-                    </div>
-                </div>
-            ))}
+            <div key={produto.id} style={styles.card}>
+
+              {/* Lixeira no topo */}
+              <button
+                onClick={() => onUnfollow(produto.id)}
+                style={styles.trashBtn}
+                title="Parar de seguir"
+              >
+                🗑
+              </button>
+
+
+              {/* Imagem */}
+              <div style={styles.imageBox}>
+                <img
+                  src={produto.url_imagem || placeholderImg}
+                  alt={produto.nome_produto}
+                  style={styles.image}
+                />
+              </div>
+
+
+              {/* Nome */}
+              <div style={styles.name}>
+                {produto.nome_produto}
+              </div>
+
+
+              {/* Ações */}
+              <div style={styles.actions}>
+
+                <Link
+                  to={`/produto/${produto.id}`}
+                  style={styles.detailsBtn}
+                >
+                  Ver Detalhes
+                </Link>
+
+
+                <button
+                  onClick={() => onEditPrice(produto.id)}
+                  style={styles.editBtn}
+                  title="Editar meta"
+                >
+                  ✎
+                </button>
+
+              </div>
+
+            </div>
+
+          ))}
+
         </div>
-    );
+
+      </div>
+
+    </div>
+  );
 }
 
+
+/* ===========================
+   ESTILOS
+=========================== */
+
 const styles = {
-    grid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-        gap: '30px',
-        padding: '20px 0',
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: '16px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-        padding: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        border: '1px solid #f3f4f6',
-        position: 'relative', // Para posicionar a lixeira
-    },
-    trashBtn: {
-        position: 'absolute',
-        top: '15px',
-        right: '15px',
-        background: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-        color: '#9ca3af', // Cinza claro
-        padding: '5px',
-    },
-    imageContainer: {
-        width: '100%',
-        height: '150px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: '15px',
-    },
-    image: {
-        maxWidth: '100%',
-        maxHeight: '100%',
-        objectFit: 'contain',
-    },
-    name: {
-        fontSize: '16px',
-        fontWeight: '700',
-        color: '#111827',
-        marginBottom: '20px',
-        textAlign: 'center',
-    },
-    actionsRow: {
-        display: 'flex',
-        width: '100%',
-        gap: '10px',
-        marginTop: 'auto'
-    },
-    detailsBtn: {
-        backgroundColor: '#1e2330',
-        color: 'white',
-        border: 'none',
-        padding: '10px 0',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: '600',
-        fontSize: '13px',
-        flex: 1, // Ocupa espaço disponível
-    },
-    editBtn: {
-        backgroundColor: '#1e2330',
-        border: 'none',
-        borderRadius: '8px',
-        width: '40px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-    }
+
+  wrapper: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+
+  container: {
+    width: '100%',
+    maxWidth: '1150px',
+    background: '#fff',
+    borderRadius: '14px',
+    padding: '25px',
+    boxShadow: '0 3px 8px rgba(0,0,0,0.04)',
+    border: '1px solid #eee',
+  },
+
+  title: {
+    marginBottom: '20px',
+    fontSize: '18px',
+    fontWeight: 700,
+    color: '#1e2330',
+  },
+
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gap: '24px',
+  },
+
+  card: {
+    position: 'relative',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    padding: '18px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    minHeight: '320px',
+    border: '1px solid #eee',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+  },
+
+
+
+  /* -------- Lixeira -------- */
+
+  trashBtn: {
+    position: 'absolute',
+    top: '12px',
+    right: '12px',
+    background: '#fff',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    padding: '5px 7px',
+    cursor: 'pointer',
+    fontSize: '13px',
+  },
+
+
+  /* -------- Imagem -------- */
+
+  imageBox: {
+    width: '100%',
+    height: '160px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    background: '#fafafa',
+    borderRadius: '8px',
+    marginBottom: '12px',
+  },
+
+  image: {
+    width: '180px',
+    height: '120px',
+    objectFit: 'contain',
+  },
+
+
+  /* -------- Nome -------- */
+
+  name: {
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 700,
+    color: '#1e2330',
+    marginBottom: '15px',
+    minHeight: '36px',
+  },
+
+
+  /* -------- Botões -------- */
+
+  actions: {
+    marginTop: 'auto',
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '10px',
+  },
+
+  detailsBtn: {
+    backgroundColor: '#10193a',
+    color: '#fff',
+    padding: '8px 18px',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    fontWeight: 700,
+    fontSize: '13px',
+  },
+
+  editBtn: {
+    background: '#10193a',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 12px',
+    cursor: 'pointer',
+    fontWeight: 700,
+    fontSize: '13px',
+  },
+
 };
 
 export default MonitoradosGrid;

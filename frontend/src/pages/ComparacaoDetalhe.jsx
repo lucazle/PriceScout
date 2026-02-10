@@ -2,90 +2,121 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
-import { FaAmazon } from 'react-icons/fa';
-// CORREÇÃO: Removemos o SiMagazineluiza que estava causando o erro
+import { FaAmazon, FaExternalLinkAlt } from 'react-icons/fa';
 import { SiMercadopago } from 'react-icons/si';
 
-// Imagem de placeholder
-const placeholderImg = "https://via.placeholder.com/300x200.png?text=Sem+Imagem";
+const placeholderImg = "https://placehold.co/400x300/png?text=Notebook";
 
-// Componente auxiliar para a coluna de um produto
-function ProdutoColuna({ produto }) {
-  if (!produto) return <div style={styles.card}>Carregando...</div>;
-
-  const getProductImage = (prod) => {
-    if (prod.ofertas && prod.ofertas.length > 0 && prod.ofertas[0].imagem_url) {
-      return prod.ofertas[0].imagem_url;
-    }
-    const offerWithImage = prod.ofertas?.find(o => o.imagem_url);
-    return offerWithImage ? offerWithImage.imagem_url : placeholderImg;
+// Componente para exibir um produto
+function ProdutoCard({ produto }) {
+  const formatCurrency = (value) => {
+    if (value === null || value === undefined || isNaN(Number(value))) return 'N/D';
+    return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
-  
+
   const getStoreIcon = (lojaNome) => {
-    if (lojaNome.toLowerCase().includes('amazon')) return <FaAmazon color="#FF9900" />;
-    if (lojaNome.toLowerCase().includes('mercado livre')) return <SiMercadopago color="#FFE600" />;
-    // CORREÇÃO: Trocamos o ícone quebrado por um <span>
-    if (lojaNome.toLowerCase().includes('magalu')) return <span style={{...styles.logoText, color: '#0086FF'}}>M</span>;
+    const lowerName = (lojaNome || '').toLowerCase();
+    if (lowerName.includes('amazon')) return <FaAmazon size={24} color="#FF9900" />;
+    if (lowerName.includes('mercado livre')) return <SiMercadopago size={24} color="#FFE600" />;
+    if (lowerName.includes('magalu')) return <span style={styles.logoText}>M</span>;
     return null;
   };
 
-  const specs = [
-    { label: 'Marca', value: produto.nome_produto.split(' ')[0] },
-    { label: 'Modelo', value: produto.nome_produto },
-    { label: 'Tamanho da tela', value: produto.tela_base },
-    { label: 'Cor', value: 'N/D' },
-    { label: 'Tamanho do disco rígido', value: produto.armazenamento_base },
-    { label: 'Modelo da CPU', value: produto.cpu_base },
-    { label: 'Tamanho instalado da RAM', value: produto.ram_base },
-    { label: 'Sistema operacional', value: 'Windows' },
-    { label: 'Placa de vídeo', value: 'Dedicada' },
-  ];
+  const getMelhoresOfertasPorLoja = () => {
+    if (!produto?.ofertas || produto.ofertas.length === 0) return [];
+    
+    const ofertasPorLoja = {};
+    produto.ofertas.forEach(oferta => {
+      const loja = oferta.loja || 'N/A';
+      if (!ofertasPorLoja[loja] || oferta.preco_atual < ofertasPorLoja[loja].preco_atual) {
+        ofertasPorLoja[loja] = oferta;
+      }
+    });
+    
+    return Object.values(ofertasPorLoja).sort((a, b) => a.preco_atual - b.preco_atual);
+  };
+
+  const melhoresOfertas = getMelhoresOfertasPorLoja();
 
   return (
-    <div style={styles.column}>
-      {/* Card de Specs */}
-      <div style={styles.card}>
-        <h2 style={styles.title}>{produto.nome_produto}</h2>
-        <img src={getProductImage(produto)} alt={produto.nome_produto} style={styles.productImage} />
-        <table style={styles.specsTable}>
-          <tbody>
-            {specs.map(spec => (
-              <tr key={spec.label}>
-                <td style={styles.specLabel}>{spec.label}</td>
-                <td style={styles.specValue}>{spec.value || 'N/D'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Card de Ofertas */}
-      <div style={styles.card}>
-        <h3 style={styles.title}>Compare preços em {produto.ofertas.length} lojas</h3>
-        <div style={styles.offerList}>
-          {produto.ofertas.map(oferta => (
-            <div key={oferta.id} style={styles.offerItem}>
-              <img src={oferta.imagem_url || placeholderImg} alt={oferta.titulo_extraido} style={styles.offerImage} />
-              <div style={styles.offerDetails}>
-                <div style={styles.offerStore}>
-                  {getStoreIcon(oferta.loja)}
-                  <span>{oferta.loja}</span>
-                </div>
-                <span style={styles.offerPrice}>{oferta.preco_atual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-              </div>
-              <a href={oferta.url} target="_blank" rel="noopener noreferrer" style={styles.offerButton}>
-                Ir à loja
-              </a>
+    <div style={styles.produtoColumn}>
+      {/* Informações do Produto */}
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>{produto.nome_produto}</h2>
+        <div style={styles.produtoInfo}>
+          <div style={styles.imageContainer}>
+            <img 
+              src={produto.url_imagem || placeholderImg} 
+              alt={produto.nome_produto} 
+              style={styles.productImage} 
+            />
+          </div>
+          <div style={styles.specsContainer}>
+            <div style={styles.specItem}>
+              <span style={styles.specLabel}>CPU:</span>
+              <span style={styles.specValue}>{produto.cpu_base || 'N/D'}</span>
             </div>
-          ))}
+            <div style={styles.specItem}>
+              <span style={styles.specLabel}>RAM:</span>
+              <span style={styles.specValue}>{produto.ram_base || 'N/D'}</span>
+            </div>
+            <div style={styles.specItem}>
+              <span style={styles.specLabel}>Armazenamento:</span>
+              <span style={styles.specValue}>{produto.armazenamento_base || 'N/D'}</span>
+            </div>
+            <div style={styles.specItem}>
+              <span style={styles.specLabel}>Tela:</span>
+              <span style={styles.specValue}>{produto.tela_base ? `${produto.tela_base}"` : 'N/D'}</span>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Comparação de Preços */}
+      <div style={styles.section}>
+        <h2 style={styles.comparacaoTitle}>Preços ({melhoresOfertas.length} lojas)</h2>
+        
+        {melhoresOfertas.length === 0 ? (
+          <p style={styles.noOfertas}>Nenhuma oferta disponível</p>
+        ) : (
+          <div style={styles.ofertasList}>
+            {melhoresOfertas.map((oferta, index) => (
+              <div key={index} style={styles.ofertaRow}>
+                <div style={styles.ofertaLeft}>
+                  <img 
+                    src={produto.url_imagem || placeholderImg} 
+                    alt={produto.nome_produto} 
+                    style={styles.ofertaImage} 
+                  />
+                  <div style={styles.ofertaInfo}>
+                    <div style={styles.ofertaPreco}>
+                      {formatCurrency(oferta.preco_atual)}
+                    </div>
+                    <div style={styles.ofertaLoja}>
+                      {getStoreIcon(oferta.loja)}
+                      <span style={styles.lojaTexto}>{oferta.loja}</span>
+                    </div>
+                    <div style={styles.lojaOrigem}>Brasil</div>
+                  </div>
+                </div>
+                
+                <a 
+                  href={oferta.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  style={styles.irLojaBtn}
+                >
+                  Ir à loja
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-
-// Componente principal da página
 function ComparacaoDetalhe() {
   const { id1, id2 } = useParams();
   const [produto1, setProduto1] = useState(null);
@@ -96,12 +127,14 @@ function ComparacaoDetalhe() {
     const fetchDetalhes = async () => {
       setLoading(true);
       try {
-        const [res1, res2] = await Promise.all([
-          api.get(`/products/${id1}`),
-          api.get(`/products/${id2}`)
-        ]);
-        setProduto1(res1.data);
-        setProduto2(res2.data);
+        const res = await api.get('/dashboard');
+        const produtos = res.data;
+        
+        const p1 = produtos.find(p => p.id === parseInt(id1));
+        const p2 = produtos.find(p => p.id === parseInt(id2));
+        
+        setProduto1(p1);
+        setProduto2(p2);
       } catch (err) {
         console.error("Erro ao buscar detalhes da comparação", err);
       } finally {
@@ -113,115 +146,190 @@ function ComparacaoDetalhe() {
   }, [id1, id2]);
 
   if (loading) return <div style={styles.loading}>Carregando comparação...</div>;
+  
+  if (!produto1 || !produto2) {
+    return <div style={styles.loading}>Produtos não encontrados</div>;
+  }
 
   return (
-    <div style={styles.compareContainer}>
-      <ProdutoColuna produto={produto1} />
-      <ProdutoColuna produto={produto2} />
+    <div style={styles.container}>
+      <h1 style={styles.pageTitle}>Comparação de Notebooks</h1>
+      
+      <div style={styles.compareContainer}>
+        <ProdutoCard produto={produto1} />
+        <ProdutoCard produto={produto2} />
+      </div>
     </div>
   );
 }
 
-// Estilos
 const styles = {
-  loading: { fontSize: '20px', color: '#555', textAlign: 'center', padding: '50px' },
+  container: {
+    padding: '20px 0',
+  },
+  loading: {
+    padding: '50px',
+    textAlign: 'center',
+    color: '#666',
+    fontSize: '18px',
+  },
+  pageTitle: {
+    fontSize: '28px',
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: '30px',
+    textAlign: 'center',
+  },
   compareContainer: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '20px',
-    alignItems: 'flex-start',
+    gap: '30px',
   },
-  column: {
+  produtoColumn: {
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: '10px',
-    padding: '20px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+  section: {
+    backgroundColor: 'white',
+    padding: '25px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
   },
-  title: {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: '15px',
-  },
-  productImage: {
-    width: '100%',
-    maxHeight: '300px',
-    objectFit: 'contain',
-    borderRadius: '5px',
+  sectionTitle: {
+    fontSize: '20px',
+    fontWeight: '700',
+    color: '#1f2937',
     marginBottom: '20px',
+    borderBottom: '2px solid #f3f4f6',
+    paddingBottom: '10px',
   },
-  specsTable: {
+  produtoInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  imageContainer: {
     width: '100%',
-    borderCollapse: 'collapse',
+    height: '200px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: '8px',
+    overflow: 'hidden',
+  },
+  // FIX: força todas as imagens principais do detalhe a terem o mesmo tamanho visual
+  productImage: {
+    width: '220px',
+    height: '160px',
+    objectFit: 'contain',
+  },
+  specsContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  specItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '10px 12px',
+    backgroundColor: '#f9fafb',
+    borderRadius: '6px',
   },
   specLabel: {
-    fontWeight: 'bold',
-    color: '#333',
     fontSize: '14px',
-    padding: '8px 0',
-    borderBottom: '1px solid #f0f2f5',
-    width: '40%',
+    color: '#6b7280',
+    fontWeight: '500',
   },
   specValue: {
-    color: '#555',
     fontSize: '14px',
-    padding: '8px 0',
-    borderBottom: '1px solid #f0f2f5',
+    color: '#111827',
+    fontWeight: '600',
   },
-  offerList: {
+  comparacaoTitle: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: '20px',
+  },
+  ofertasList: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px',
+    gap: '0',
   },
-  offerItem: {
+  ofertaRow: {
     display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: '15px 0',
+    borderBottom: '1px solid #e5e7eb',
+  },
+  ofertaLeft: {
+    display: 'flex',
     gap: '15px',
-    padding: '10px',
-    borderRadius: '8px',
-    backgroundColor: '#f9f9f9',
-  },
-  offerImage: {
-    width: '60px',
-    height: '60px',
-    objectFit: 'contain',
-    borderRadius: '5px',
-  },
-  offerDetails: {
+    alignItems: 'center',
     flex: 1,
   },
-  offerStore: {
+  ofertaImage: {
+    width: '80px',
+    height: '60px',
+    objectFit: 'contain',
+    backgroundColor: '#f9fafb',
+    borderRadius: '6px',
+    padding: '5px',
+  },
+  ofertaInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  ofertaPreco: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  ofertaLoja: {
     display: 'flex',
     alignItems: 'center',
-    gap: '5px',
-    fontSize: '12px',
-    color: '#555',
+    gap: '8px',
   },
-  offerPrice: {
-    fontSize: '16px',
-    fontWeight: 'bold',
-    color: '#333',
+  lojaTexto: {
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#374151',
   },
-  offerButton: {
-    backgroundColor: '#3b5998',
+  lojaOrigem: {
+    fontSize: '11px',
+    color: '#9ca3af',
+  },
+  irLojaBtn: {
+    backgroundColor: '#1e2330',
     color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    padding: '8px 12px',
-    fontSize: '12px',
-    fontWeight: 'bold',
     textDecoration: 'none',
-    textAlign: 'center',
+    padding: '10px 20px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+    whiteSpace: 'nowrap',
   },
-  // CORREÇÃO: Adicionando o estilo que faltava para o <span>
+  noOfertas: {
+    textAlign: 'center',
+    color: '#9ca3af',
+    fontSize: '14px',
+    padding: '20px',
+  },
   logoText: {
-    fontWeight: 'bold',
-    fontSize: '22px',
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#0086FF',
+    border: '2px solid #0086FF',
+    borderRadius: '4px',
+    padding: '2px 8px',
   },
 };
 

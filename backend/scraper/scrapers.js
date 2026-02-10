@@ -2,23 +2,42 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const config = require('./config');
 const logger = require('./logger');
+let pwScrapers = null;
+try {
+  pwScrapers = require('./playwrightScrapers');
+} catch (e) {
+  // Playwright scrapers são opcionais; se não estiverem presentes, seguimos com Axios/Cheerio para lojas compatíveis
+}
 
 // Removemos 'fs' e 'path' (não há mais debug)
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+// Função para obter o HTML da página com User-Agent personalizado
 async function getSoup(url, userAgent, site) {
   try {
     const response = await axios.get(url, {
-      headers: { 
+      headers: {
         'User-Agent': userAgent,
-        'Accept-Language': 'pt-BR,pt;q=0.9',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Referer': 'https://www.google.com/'
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1'
       },
-      timeout: 20000 
+      timeout: 20000,
+      validateStatus: status => status < 500
     });
-    // Código de debug removido
+
+    if (response.status !== 200) {
+      logger.warn(`[Scraper] ${site} respondeu ${response.status} para ${url}`);
+      return null;
+    }
+
     return cheerio.load(response.data);
   } catch (error) {
     logger.warn(`[Scraper] Falha ao acessar ${url}: ${error.message}`);
@@ -26,6 +45,7 @@ async function getSoup(url, userAgent, site) {
     return null;
   }
 }
+
 
 // --- FUNÇÕES DE EXTRAÇÃO ROBUSTAS ---
 // Tenta múltiplos seletores até achar o texto
@@ -73,6 +93,118 @@ function normalizeText(text) {
         .replace(/[\u0300-\u036f]/g, '') // Remove os acentos
         .replace(/[^\w\s]/gi, ''); // Remove pontuação (deixa só letras, números e espaços)
 }
+
+// const { withBrowser } = require('./browser');
+
+// // --- SCRAPER DA SHOPEE
+// async function buscaShopee(termo) {
+//   return withBrowser(async (page) => {
+//     const results = [];
+//     const q = termo.replace(/ /g, '%20');
+//     const url = `https://shopee.com.br/search?keyword=${q}`;
+
+//     logger.info(`[Shopee] Buscando: ${termo}...`);
+
+//     await page.goto(url, { waitUntil: 'networkidle' });
+//     await page.waitForTimeout(3000);
+
+//     const items = await page.$$eval(
+//       'div[data-sqe="item"]',
+//       cards =>
+//         cards.slice(0, 10).map(card => {
+//           const title =
+//             card.querySelector('[aria-label]')?.getAttribute('aria-label');
+
+//           const priceText =
+//             [...card.querySelectorAll('span')]
+//               .map(s => s.innerText)
+//               .find(t => t.includes('R$')) || '';
+
+//           const link = card.querySelector('a')?.href;
+//           const image = card.querySelector('img')?.src;
+
+//           return { title, priceText, link, image };
+//         })
+//     );
+
+//     for (const i of items) {
+//       const price = parsePrice(i.priceText);
+//       if (!i.title || price <= 0) continue;
+
+//       results.push({
+//         loja: 'Shopee',
+//         title: i.title,
+//         price,
+//         link: i.link,
+//         image: i.image
+//       });
+//     }
+
+//     logger.info(`[Shopee] Encontrados ${results.length} itens`);
+//     return results;
+//   });
+// }
+
+
+
+
+// // --- SCRAPER DO ALIEXPRESS ---
+// async function buscaAliExpress(termo) {
+//   return withBrowser(async (page) => {
+//     const results = [];
+//     const q = termo.replace(/ /g, '+');
+//     const url = `https://pt.aliexpress.com/wholesale?SearchText=${q}`;
+
+//     logger.info(`[AliExpress] Buscando: ${termo}...`);
+
+//     await page.goto(url, { waitUntil: 'networkidle' });
+//     await page.waitForTimeout(3000);
+
+//     const items = await page.$$eval(
+//       'a[href*="/item/"]',
+//       links =>
+//         links.slice(0, 10).map(link => {
+//           const card = link.closest('div');
+//           const title =
+//             card?.querySelector('h1,h2,h3')?.innerText || '';
+//           const priceText =
+//             [...card?.querySelectorAll('span') || []]
+//               .map(s => s.innerText)
+//               .find(t => t.includes('R$')) || '';
+//           const image = card?.querySelector('img')?.src;
+
+//           return {
+//             title,
+//             priceText,
+//             link: link.href,
+//             image
+//           };
+//         })
+//     );
+
+//     for (const i of items) {
+//       const price = parsePrice(i.priceText);
+//       if (!i.title || price <= 0) continue;
+
+//       results.push({
+//         loja: 'AliExpress',
+//         title: i.title,
+//         price,
+//         link: i.link,
+//         image: i.image
+//       });
+//     }
+
+//     logger.info(`[AliExpress] Encontrados ${results.length} itens`);
+//     return results;
+//   });
+// }
+
+
+
+
+
+
 
 
 // --- SCRAPER DA AMAZON (v2 Robusto) ---
@@ -206,4 +338,28 @@ async function buscaMercadoLivre(termo, userAgent) {
   return results;
 }
 
-module.exports = { buscaAmazon, buscaMercadoLivre, sleep };
+// Delegações para scrapers Playwright (somente lojas ativas)
+
+async function buscaMagalu(termo, _userAgent) {
+  if (!pwScrapers || !pwScrapers.buscaMagalu) {
+    logger.warn('[Magalu] Scraper Playwright indisponível. Retornando lista vazia.');
+    return [];
+  }
+  return pwScrapers.buscaMagalu(termo);
+}
+
+async function buscaKabum(termo, _userAgent) {
+  if (!pwScrapers || !pwScrapers.buscaKabum) {
+    logger.warn('[KaBuM] Scraper Playwright indisponível. Retornando lista vazia.');
+    return [];
+  }
+  return pwScrapers.buscaKabum(termo);
+}
+
+module.exports = {
+  buscaAmazon,
+  buscaMercadoLivre,
+  buscaMagalu,
+  buscaKabum,
+  sleep
+};

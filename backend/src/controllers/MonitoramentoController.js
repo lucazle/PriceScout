@@ -10,11 +10,19 @@ async function getProdutosMonitorados(req, res) {
 
     try {
         // Query CORRIGIDA: Usa preco_maximo_desejado e junta todas as tabelas
-        const query = `
-            SELECT
-                p.id, p.nome_produto, p.termo_busca, 
-                us.preco_maximo_desejado, us.ram_desejada, us.cpu_modelo_desejado,
-                o.loja, o.preco_atual, o.url, o.data_ultima_verificacao
+       const query = `
+    SELECT
+        p.id,
+        p.nome_produto,
+        p.url_imagem,
+        p.termo_busca, 
+        us.preco_maximo_desejado,
+        us.ram_desejada,
+        us.cpu_modelo_desejado,
+        o.loja,
+        o.preco_atual,
+        o.url,
+        o.data_ultima_verificacao
             FROM
                 Produtos p
             JOIN
@@ -31,14 +39,15 @@ async function getProdutosMonitorados(req, res) {
         const produtosFormatados = {};
         rows.forEach(row => {
             if (!produtosFormatados[row.id]) {
-                produtosFormatados[row.id] = {
-                    id: row.id,
-                    nome_produto: row.nome_produto,
-                    preco_maximo_desejado: row.preco_maximo_desejado,
-                    ram_desejada: row.ram_desejada,
-                    cpu_modelo_desejado: row.cpu_modelo_desejado,
-                    ofertas: []
-                };
+               produtosFormatados[row.id] = {
+    id: row.id,
+    nome_produto: row.nome_produto,
+    url_imagem: row.url_imagem, // 👈 AQUI
+    preco_maximo_desejado: row.preco_maximo_desejado,
+    ram_desejada: row.ram_desejada,
+    cpu_modelo_desejado: row.cpu_modelo_desejado,
+    ofertas: []
+};
             }
             if (row.preco_atual) {
                 produtosFormatados[row.id].ofertas.push({

@@ -1,89 +1,109 @@
 import React from 'react';
 
 function DisponiveisGrid({ notebooks, onMonitorar }) {
-    if (!notebooks || notebooks.length === 0) return <p style={{padding: 20}}>Carregando produtos...</p>;
+
+    if (!notebooks || notebooks.length === 0) {
+        return <p style={{ padding: 20 }}>Carregando produtos...</p>;
+    }
 
     return (
         <div style={styles.grid}>
             {notebooks.map(produto => (
                 <div key={produto.id} style={styles.card}>
-                    <div style={styles.imageContainer}>
-                        {/* Placeholder simulando a foto do notebook */}
-                        <img 
-                            src="https://placehold.co/300x200/png?text=Notebook" 
-                            alt={produto.nome_produto} 
-                            style={styles.image} 
+
+                    {/* Caixa fixa da imagem */}
+                    <div style={styles.imageBox}>
+                        <img
+                            src={produto.url_imagem || "https://placehold.co/300x200/png?text=Sem+Foto"}
+                            alt={produto.nome_produto}
+                            style={styles.image}
                         />
                     </div>
-                    <h4 style={styles.name}>{produto.nome_produto}</h4>
-                    
-                    <button 
+
+                    <p style={styles.name}>
+                        {produto.nome_produto}
+                    </p>
+
+                    <button
                         onClick={() => onMonitorar(produto)}
-                        style={styles.monitorBtn}
+                        style={styles.button}
                     >
                         Monitorar
                     </button>
+
                 </div>
             ))}
         </div>
     );
 }
 
+
 const styles = {
+
+    /* Grid apenas (sem container externo) */
     grid: {
         display: 'grid',
-        // Ajuste para 3 colunas responsivas como na foto
-        gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
-        gap: '30px',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '28px',
+        width: '100%',
+        maxWidth: '1000px',
+        margin: '0 auto',
         padding: '20px 0',
     },
+
+    /* Card */
     card: {
-        backgroundColor: '#fff',
-        borderRadius: '16px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-        padding: '24px',
+        backgroundColor: '#ffffff',
+        borderRadius: '18px',
+        padding: '22px 18px 26px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        border: '1px solid #f3f4f6',
-        transition: 'transform 0.2s ease',
+        border: '1px solid #eee',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.04)',
+        minHeight: '340px',
     },
-    imageContainer: {
+
+    /* Área padrão da imagem */
+    imageBox: {
         width: '100%',
-        height: '160px',
+        height: '170px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: '20px',
+        marginBottom: '16px',
     },
+
+    /* Imagem padronizada */
     image: {
-        maxWidth: '100%',
-        maxHeight: '100%',
+        maxWidth: '190px',
+        maxHeight: '140px',
         objectFit: 'contain',
     },
+
+    /* Nome */
     name: {
-        fontSize: '16px',
-        fontWeight: '700',
-        color: '#111827', // Cor escura quase preta
-        marginBottom: '24px',
-        textAlign: 'center',
-        height: '40px', // Altura fixa para alinhar botões
-        display: 'flex',
-        alignItems: 'center'
-    },
-    monitorBtn: {
-        backgroundColor: '#1e2330', // Azul escuro do seu design
-        color: 'white',
-        border: 'none',
-        padding: '12px 0',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: '600',
         fontSize: '14px',
-        width: '100%',
+        fontWeight: 600,
+        color: '#1e2330',
+        textAlign: 'center',
+        minHeight: '40px',
+        marginBottom: '18px',
+    },
+
+    /* Botão */
+    button: {
+        backgroundColor: '#10193a',
+        color: '#fff',
+        border: 'none',
+        padding: '10px 28px',
+        borderRadius: '10px',
+        cursor: 'pointer',
+        fontWeight: 700,
+        fontSize: '13px',
         marginTop: 'auto',
-        transition: 'background-color 0.2s',
-    }
+    },
 };
+
 
 export default DisponiveisGrid;

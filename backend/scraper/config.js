@@ -1,7 +1,10 @@
 const URLS_BASE = {
   amazon: "https://www.amazon.com.br",
   mercadolivre: "https://lista.mercadolivre.com.br",
+  magalu: "https://www.magazineluiza.com.br",
+  kabum: "https://www.kabum.com.br"
 };
+
 
 // Quantas páginas buscar por padrão
 const PAGINAS_A_BUSCAR = 1;
