@@ -4,20 +4,6 @@ import React from 'react';
 function LojasMonitoradas() {
   const lojas = [
     { 
-      nome: 'Americanas', 
-      pais: 'Brasil', 
-      logo: 'https://img.ibxk.com.br///2020/03/24/24174059442399.jpg?ims=328x',
-      url: 'https://www.americanas.com.br',
-      bgColor: '#E60014'
-    },
-    { 
-      nome: 'Amazon', 
-      pais: 'Brasil', 
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg',
-      url: 'https://www.amazon.com.br',
-      bgColor: '#FF9900'
-    },
-    { 
       nome: 'Mercado Livre', 
       pais: 'Brasil', 
       logo: 'https://http2.mlstatic.com/frontend-assets/ui-navigation/5.21.22/mercadolibre/logo__large_plus.png',
@@ -27,14 +13,14 @@ function LojasMonitoradas() {
     { 
       nome: 'Kabum', 
       pais: 'Brasil', 
-      logo: 'https://theme.zdassets.com/theme_assets/9633455/9814df697b7016ac6d47f6ea464ebd9eca966674.png',
+      logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ad/KaBuM%21_Logo.png',
       url: 'https://www.kabum.com.br',
       bgColor: '#FF6600'
     },
     { 
       nome: 'Magalu', 
       pais: 'Brasil', 
-      logo: 'https://compass-ssl.microsoft.com/assets/14/8f/148f848a-e86f-49cd-b135-9297fb9e0933.png?n=Magazine_Luiza_Tile_Logo_200x200.png',
+      logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTP6HoXrpXtJqWEhS3GXJwGCbmoBJwVqCXtAw&s',
       url: 'https://www.magazineluiza.com.br',
       bgColor: '#0086FF'
     },

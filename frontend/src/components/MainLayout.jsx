@@ -73,7 +73,6 @@ const styles = {
     margin: '0 auto',
   },
   leftNavColumn: {
-    position: 'sticky',
     top: '100px',
     display: 'flex',
     flexDirection: 'column',
@@ -87,7 +86,6 @@ const styles = {
     minHeight: '80vh',
   },
   sidebarColumn: {
-    position: 'sticky',
     top: '100px',
     display: 'flex',
     flexDirection: 'column',
